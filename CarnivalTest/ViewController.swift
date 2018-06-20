@@ -17,6 +17,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     var selectedAnchor: ARAnchor? = nil;
     var anchors: [ARAnchor] = [ARAnchor]()
     
+    var detectionPaused: Bool = false
+    
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~APP STATE CONTROL~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,6 +111,11 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     @objc func handleTap(rec: UITapGestureRecognizer){
         
+        if self.detectionPaused {
+            enablePlaneDetection(types: [.vertical])
+            return
+        }
+        
 //        Tap ended
         if rec.state == .ended {
             
@@ -155,8 +162,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                     self.sceneView.session.remove(anchor: self.anchors[i])
                 }
             }
+            
 //            We've selected our play surface so no need to keep making new anchors
             disablePlaneDetection()
+            spawnScene()
         }
     }
     
@@ -166,6 +175,12 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         config.planeDetection = types
         
         sceneView.session.run(config)
+        
+        if self.selectedAnchor != nil {
+//            Take care of resetting selected object here
+        }
+        
+        detectionPaused = false
     }
     
 //    Restart session w/ no plane detection
@@ -174,6 +189,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         config.planeDetection = []
         
         sceneView.session.run(config)
+        
+        detectionPaused = true
     }
     
     func session(_ session: ARSession, didFailWithError error: Error) {
@@ -190,4 +207,26 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Reset tracking and/or remove existing anchors if consistent tracking is required
         
     }
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //~~~~~~GAME FUNCTIONALITY~~~~~~~~~~~~~~
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    func spawnScene(){
+        guard let rootAnchor = self.selectedAnchor! as? ARPlaneAnchor,
+                let rootNode = self.sceneView.node(for: rootAnchor) else {return}
+        
+        let rootPosition = rootAnchor.center
+        let rootExtent = rootAnchor.extent
+        
+        let bigDonut = SCNTorus(ringRadius: 0.1, pipeRadius: 0.01)
+        let donutNode = SCNNode(geometry: bigDonut)
+        donutNode.simdPosition = rootPosition
+        donutNode.opacity = 1.0
+        
+        rootNode.addChildNode(donutNode)
+        
+    }
 }
+
+
