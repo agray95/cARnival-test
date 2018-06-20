@@ -146,14 +146,15 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                     }
                 }
                 
-//                Remove nonselected anchors from session
-                for i in 0...self.anchors.count-1 {
-                    if self.anchors[i].identifier != self.selectedAnchor?.identifier {
-                        self.sceneView.session.remove(anchor: self.anchors[i])
-                    }
-                }
+
             }
             
+            //                Remove nonselected anchors from session
+            for i in 0...self.anchors.count-1 {
+                if self.anchors[i].identifier != self.selectedAnchor?.identifier {
+                    self.sceneView.session.remove(anchor: self.anchors[i])
+                }
+            }
 //            We've selected our play surface so no need to keep making new anchors
             disablePlaneDetection()
         }
