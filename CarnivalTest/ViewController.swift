@@ -19,6 +19,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     var detectionPaused: Bool = false
     
+    let gamespaceDepth: CGFloat = 3.0
+    
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~APP STATE CONTROL~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -214,17 +216,92 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     func spawnScene(){
         guard let rootAnchor = self.selectedAnchor! as? ARPlaneAnchor,
-                let rootNode = self.sceneView.node(for: rootAnchor) else {return}
+            let rootNode = self.sceneView.node(for: rootAnchor) else {return}
+        
+        let objScn = SCNScene(named: "art.scnassets/ship.scn")
+        
+        
+//        rootNode.addChildNode(testObjScene.rootNode.childNode(withName: "testPlane", recursively: true)!)
+        
         
         let rootPosition = rootAnchor.center
         let rootExtent = rootAnchor.extent
+        print(rootExtent)
         
         let bigDonut = SCNTorus(ringRadius: 0.1, pipeRadius: 0.01)
         let donutNode = SCNNode(geometry: bigDonut)
         donutNode.simdPosition = rootPosition
         donutNode.opacity = 1.0
         
+        
+        let testObjNode = objScn!.rootNode.childNodes.first!
+        testObjNode.simdPosition = rootPosition
+        testObjNode.opacity = 1.0
+        testObjNode.eulerAngles.x = -.pi/2
+        testObjNode.scale = SCNVector3(0.25, 0.25, 0.25)
+        
+        
+        rootNode.addChildNode(testObjNode)
         rootNode.addChildNode(donutNode)
+        
+//        Create Gamestage Occluders
+        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Top)
+        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Bottom)
+        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Left)
+        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Right)
+        
+    }
+    
+    enum OccluderType {
+        case Top
+        case Bottom
+        case Left
+        case Right
+    }
+    
+//    Spawn occluders to hide contents of gamestage from the outside. "Window" effect
+    func createOccluder(rootNode: SCNNode, rootAnchor: ARPlaneAnchor, type: OccluderType) {
+        let rootExtent = rootAnchor.extent
+        let rootPosition = rootAnchor.center
+        
+        var occluderPlane: SCNPlane;
+        
+//        Set the width/height of occluder planes
+        switch type {
+            case OccluderType.Top, OccluderType.Bottom:
+                occluderPlane = SCNPlane(width: CGFloat(rootExtent.x), height: self.gamespaceDepth)
+                break
+            case OccluderType.Right, OccluderType.Left:
+                occluderPlane = SCNPlane(width: CGFloat(rootExtent.z), height: self.gamespaceDepth)
+                break
+        }
+        
+        let occluderNode = SCNNode(geometry: occluderPlane)
+        
+//        Clear material but still in buffer
+        occluderPlane.materials.first?.colorBufferWriteMask = []
+        
+//        Set position & rotation of occluders
+        switch type {
+            case OccluderType.Top:
+                occluderNode.simdPosition = float3(rootPosition.x, Float(CGFloat(rootPosition.y) - gamespaceDepth/2.0), Float(CGFloat(rootPosition.z) - CGFloat(rootExtent.z)/2.0))
+                occluderNode.eulerAngles.y = -.pi
+                break
+            case OccluderType.Bottom:
+                occluderNode.simdPosition = float3(rootPosition.x, Float(CGFloat(rootPosition.y) - gamespaceDepth/2.0), Float(CGFloat(rootPosition.z) + CGFloat(rootExtent.z)/2.0))
+                break
+            case OccluderType.Left:
+                occluderNode.simdPosition = float3(Float(CGFloat(rootPosition.x) - CGFloat(rootExtent.x)/2.0), Float(CGFloat(rootPosition.y) - gamespaceDepth/2.0), rootPosition.z)
+                occluderNode.eulerAngles.y = -.pi/2
+                break
+            case OccluderType.Right:
+                occluderNode.simdPosition = float3(Float(CGFloat(rootPosition.x) + CGFloat(rootExtent.x)/2.0), Float(CGFloat(rootPosition.y) - gamespaceDepth/2.0), rootPosition.z)
+                occluderNode.eulerAngles.y = .pi/2
+                break
+        }
+        
+//        Add the occluder to the anchor node
+        rootNode.addChildNode(occluderNode)
         
     }
 }

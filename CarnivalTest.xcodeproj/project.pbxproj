@@ -13,6 +13,8 @@
 		A706C49420DACEB900627441 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A706C49220DACEB900627441 /* Main.storyboard */; };
 		A706C49620DACEBA00627441 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A706C49520DACEBA00627441 /* Assets.xcassets */; };
 		A706C49920DACEBA00627441 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A706C49720DACEBA00627441 /* LaunchScreen.storyboard */; };
+		A7C0813F20DB0FDC0090862A /* ship.scn in Resources */ = {isa = PBXBuildFile; fileRef = A7C0813D20DB0FDC0090862A /* ship.scn */; };
+		A7C0814020DB0FDC0090862A /* booth.scn in Resources */ = {isa = PBXBuildFile; fileRef = A7C0813E20DB0FDC0090862A /* booth.scn */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +26,8 @@
 		A706C49520DACEBA00627441 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A706C49820DACEBA00627441 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A706C49A20DACEBA00627441 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A7C0813D20DB0FDC0090862A /* ship.scn */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; name = ship.scn; path = art.scnassets/ship.scn; sourceTree = "<group>"; };
+		A7C0813E20DB0FDC0090862A /* booth.scn */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; name = booth.scn; path = art.scnassets/booth.scn; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +65,8 @@
 				A706C49020DACEB900627441 /* ViewController.swift */,
 				A706C49220DACEB900627441 /* Main.storyboard */,
 				A706C49520DACEBA00627441 /* Assets.xcassets */,
+				A7C0813E20DB0FDC0090862A /* booth.scn */,
+				A7C0813D20DB0FDC0090862A /* ship.scn */,
 				A706C49720DACEBA00627441 /* LaunchScreen.storyboard */,
 				A706C49A20DACEBA00627441 /* Info.plist */,
 			);
@@ -125,10 +131,12 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A7C0813F20DB0FDC0090862A /* ship.scn in Resources */,
 				A706C48F20DACEB900627441 /* art.scnassets in Resources */,
 				A706C49920DACEBA00627441 /* LaunchScreen.storyboard in Resources */,
 				A706C49620DACEBA00627441 /* Assets.xcassets in Resources */,
 				A706C49420DACEB900627441 /* Main.storyboard in Resources */,
+				A7C0814020DB0FDC0090862A /* booth.scn in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
