@@ -21,6 +21,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     let gamespaceDepth: CGFloat = 3.0
     
+    let surfaceTypes = [.vertical]
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~APP STATE CONTROL~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,7 +63,9 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         
         
-        guard let planeAnchor = anchor as? ARPlaneAnchor else {return}
+        guard
+            let planeAnchor = anchor as? ARPlaneAnchor
+        else {return}
         
 //        Add spherical marker
         let marker = SCNSphere(radius: 0.01)
@@ -87,11 +90,12 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
 
-        guard let planeAnchor = anchor as? ARPlaneAnchor,
+        guard
+            let planeAnchor = anchor as? ARPlaneAnchor,
             let markerNode: SCNNode = node.childNodes[0],
             let planeNode: SCNNode = node.childNodes[1],
-              let plane = planeNode.geometry as? SCNPlane
-              else {return}
+            let plane = planeNode.geometry as? SCNPlane
+        else {return}
         
 //        Update visual indicators
         markerNode.simdPosition = float3(planeAnchor.center.x, 0, planeAnchor.center.z)
@@ -101,8 +105,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
     
     func renderer(_ renderer: SCNSceneRenderer, didRemove node: SCNNode, for anchor: ARAnchor) {
-        print("Removing Anchor")
-        
 //        Remove ref to selected anchor
         self.anchors.removeAll(where: { $0.identifier == anchor.identifier})
     }
@@ -113,6 +115,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     @objc func handleTap(rec: UITapGestureRecognizer){
         
+//
         if self.detectionPaused {
             enablePlaneDetection(types: [.vertical])
             return
@@ -137,10 +140,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
 //            If only 1 hit found
             if hitTestResults.count == 1 {
                 self.selectedAnchor = hitTestResults.first!.anchor!
-                
-                print("Anchor selected: ")
-                print(self.selectedAnchor)
-                
             }
 //            Otherwise get closest hit ( a precaution in case of overlap )
             else {
@@ -177,9 +176,21 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         config.planeDetection = types
         
         sceneView.session.run(config)
-        
+
+//        Take care of resetting selected object here
         if self.selectedAnchor != nil {
-//            Take care of resetting selected object here
+            
+            guard
+                let rootAnchor = self.selectedAnchor! as? ARPlaneAnchor,
+                let rootNode = self.sceneView.node(for: rootAnchor)
+            else { print("Error getting root node/anchor"); return }
+            
+            for node in rootNode.childNodes {
+                node.removeFromParentNode()
+            }
+            
+//            Remove current game stage anchor from scene
+            self.sceneView.session.remove(anchor: rootAnchor)
         }
         
         detectionPaused = false
@@ -215,32 +226,30 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
     func spawnScene(){
-        guard let rootAnchor = self.selectedAnchor! as? ARPlaneAnchor,
-            let rootNode = self.sceneView.node(for: rootAnchor) else {return}
+        
+        guard
+            let rootAnchor = self.selectedAnchor! as? ARPlaneAnchor,
+            let rootNode = self.sceneView.node(for: rootAnchor)
+        else {return}
         
         let objScn = SCNScene(named: "art.scnassets/ship.scn")
         
-        
-//        rootNode.addChildNode(testObjScene.rootNode.childNode(withName: "testPlane", recursively: true)!)
-        
-        
         let rootPosition = rootAnchor.center
-        let rootExtent = rootAnchor.extent
-        print(rootExtent)
         
+//        "Bullseye"
         let bigDonut = SCNTorus(ringRadius: 0.1, pipeRadius: 0.01)
         let donutNode = SCNNode(geometry: bigDonut)
         donutNode.simdPosition = rootPosition
         donutNode.opacity = 1.0
         
-        
+//        Planes
         let testObjNode = objScn!.rootNode.childNodes.first!
         testObjNode.simdPosition = rootPosition
         testObjNode.opacity = 1.0
         testObjNode.eulerAngles.x = -.pi/2
         testObjNode.scale = SCNVector3(0.25, 0.25, 0.25)
         
-        
+//        Add bullseye & planes to scene
         rootNode.addChildNode(testObjNode)
         rootNode.addChildNode(donutNode)
         
