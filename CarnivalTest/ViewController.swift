@@ -17,11 +17,21 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     var selectedAnchor: ARAnchor? = nil;
     var anchors: [ARAnchor] = [ARAnchor]()
     
+//    Probably gone soon
     var detectionPaused: Bool = false
     
+//    Max depth for occluders
     let gamespaceDepth: CGFloat = 3.0
     
-    let surfaceTypes = [.vertical]
+//    Default plane detection options
+    let surfaceTypes: ARWorldTrackingConfiguration.PlaneDetection = [.vertical]
+    
+    enum UserState {
+        case Browse
+        case Play
+    }
+    
+    var currentState: UserState = UserState.Browse
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~APP STATE CONTROL~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -41,9 +51,17 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
+        
+//        Currently throws error due to XCode 10 bug(?)
+//        guard
+//            let refImages = ARReferenceImage.referenceImages(inGroupNamed: "AR Resources", bundle: nil)
+//        else { fatalError("Missing expeced asset catalog resources") }
+        
+        let calendar = ARReferenceImage(UIImage(named: "testPoster")!.cgImage!, orientation: CGImagePropertyOrientation.up, physicalWidth: 0.73)
+        
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
-        configuration.planeDetection = [.vertical]
+        configuration.detectionImages = [calendar]
 
         // Run the view's session
         sceneView.session.run(configuration)
@@ -62,10 +80,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
         
-        
+//        If unable to cast to PlaneAnchor, attempt to handle as ImageAnchor
         guard
             let planeAnchor = anchor as? ARPlaneAnchor
-        else {return}
+        else { handleAddImageAnchor(renderer, didAdd: node, for: anchor); return }
         
 //        Add spherical marker
         let marker = SCNSphere(radius: 0.01)
@@ -73,7 +91,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         markerNode.simdPosition = float3(planeAnchor.center.x, 0, planeAnchor.center.z)
         markerNode.opacity = 0.8
         
-//        Add planar extent indicator
+//        Add extent indicator plane
         let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
         let planeNode = SCNNode(geometry: plane)
         planeNode.simdPosition = float3(planeAnchor.center.x, 0, planeAnchor.center.z)
@@ -88,20 +106,55 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         self.anchors.append(anchor)
     }
     
+    func handleAddImageAnchor(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor){
+        guard
+            let imgAnchor = anchor as? ARImageAnchor
+        else { return }
+        
+        print("Adding image anchor!")
+        
+        let imgAnchorMarker = SCNBox(width: 0.1, height: 0.1, length: 0.1, chamferRadius: 0.01)
+        let markerNode = SCNNode(geometry: imgAnchorMarker)
+        markerNode.opacity = 1.0
+        markerNode.simdPosition = node.simdPosition
+        
+        //        Add extent indicator plane
+        let plane = SCNPlane(width: CGFloat(imgAnchor.referenceImage.physicalSize.width), height: CGFloat(imgAnchor.referenceImage.physicalSize.height))
+        let planeNode = SCNNode(geometry: plane)
+//        planeNode.simdPosition = float3(imgAnchor.center.x, 0, imgAnchor.center.z)
+        planeNode.opacity = 0.25
+        planeNode.eulerAngles.x = -.pi / 2
+        
+        //        Add visual indicator nodes to anchor node
+        node.addChildNode(planeNode)
+        
+        node.addChildNode(markerNode)
+    }
+    
     func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
 
         guard
-            let planeAnchor = anchor as? ARPlaneAnchor,
+            let planeAnchor = anchor as? ARPlaneAnchor
+            else { handleUpdateImageAnchor(renderer, didUpdate: node, for: anchor); return }
+        
+        guard
             let markerNode: SCNNode = node.childNodes[0],
             let planeNode: SCNNode = node.childNodes[1],
             let plane = planeNode.geometry as? SCNPlane
-        else {return}
+        else { return }
         
 //        Update visual indicators
         markerNode.simdPosition = float3(planeAnchor.center.x, 0, planeAnchor.center.z)
         planeNode.simdPosition = float3(planeAnchor.center.x, 0, planeAnchor.center.z)
         plane.width = CGFloat(planeAnchor.extent.x)
         plane.height = CGFloat(planeAnchor.extent.z)
+    }
+    
+    func handleUpdateImageAnchor(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
+        guard
+            let imgAnchor = anchor as? ARImageAnchor
+        else { return }
+        print("Updating image anchor!")
     }
     
     func renderer(_ renderer: SCNSceneRenderer, didRemove node: SCNNode, for anchor: ARAnchor) {
@@ -115,9 +168,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     @objc func handleTap(rec: UITapGestureRecognizer){
         
-//
         if self.detectionPaused {
-            enablePlaneDetection(types: [.vertical])
+            enablePlaneDetection(types: self.surfaceTypes)
             return
         }
         
@@ -153,11 +205,9 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                         self.selectedAnchor = result.anchor!
                     }
                 }
-                
-
             }
             
-            //                Remove nonselected anchors from session
+//            Remove nonselected anchors from session
             for i in 0...self.anchors.count-1 {
                 if self.anchors[i].identifier != self.selectedAnchor?.identifier {
                     self.sceneView.session.remove(anchor: self.anchors[i])
@@ -166,6 +216,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             
 //            We've selected our play surface so no need to keep making new anchors
             disablePlaneDetection()
+            
+//            Possibly move this functionality to a button or something
             spawnScene()
         }
     }
@@ -221,6 +273,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
     }
     
+    func session
+    
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //~~~~~~GAME FUNCTIONALITY~~~~~~~~~~~~~~
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -254,18 +308,23 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         rootNode.addChildNode(donutNode)
         
 //        Create Gamestage Occluders
-        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Top)
-        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Bottom)
-        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Left)
-        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Right)
+        spawnOccluders(rootNode: rootNode, rootAnchor: rootAnchor)
         
     }
+    
     
     enum OccluderType {
         case Top
         case Bottom
         case Left
         case Right
+    }
+    
+    func spawnOccluders(rootNode: SCNNode, rootAnchor: ARPlaneAnchor){
+        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Top)
+        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Bottom)
+        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Left)
+        createOccluder(rootNode: rootNode, rootAnchor: rootAnchor, type: OccluderType.Right)
     }
     
 //    Spawn occluders to hide contents of gamestage from the outside. "Window" effect
